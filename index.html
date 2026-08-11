@@ -390,6 +390,39 @@
   .card.is-watched .body h3{ text-decoration:line-through; }
   .card.is-watched .thumb{ filter:grayscale(0.6); }
 
+  .next-fab{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    z-index:30;
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    border:3px solid var(--ink);
+    background:var(--red);
+    color:var(--paper);
+    font-size:1.5rem;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:4px 4px 0 var(--ink);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .next-fab:hover{ transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); }
+  .next-fab:active{ transform:translate(0,0); box-shadow:2px 2px 0 var(--ink); }
+
+  @keyframes next-pulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(201,138,31,0.65); }
+    50%{ box-shadow:0 0 0 14px rgba(201,138,31,0); }
+  }
+  .card.next-highlight{
+    outline:3px solid var(--mustard);
+    outline-offset:3px;
+    animation:next-pulse 0.9s ease-out 2;
+  }
+
   #install-banner, #offline-banner{
     display:none;
     text-align:center;
@@ -481,6 +514,8 @@
   Thumbnails are stylized monograms, not actual posters — no bootlegged art here. <b>Ratings are one opinionated nerd's take</b>, not gospel; skip freely, argue in your group chat.<br>
   Current as of August 2026 — <i>Avengers: Doomsday</i> is still a few months out.
 </footer>
+
+<button id="next-fab" class="next-fab" title="Jump to what's next" aria-label="Scroll to the next unwatched item">⏭</button>
 
 <script>
 const RATINGS = {
@@ -995,6 +1030,31 @@ function refreshVisibility(){
   });
 }
 refreshVisibility();
+
+/* ---------- "NEXT UP" FAB ---------- */
+// Jumps to the first unwatched card that comes after the furthest-down
+// watched card, among whatever's currently visible (respects filters/order).
+const nextFab = document.getElementById("next-fab");
+nextFab.addEventListener("click", () => {
+  const cards = [...document.querySelectorAll(".card")].filter(c => c.offsetParent !== null);
+  if(cards.length === 0) return;
+
+  let lastWatchedIdx = -1;
+  cards.forEach((c, i) => { if(watched.has(c.dataset.id)) lastWatchedIdx = i; });
+
+  const target = cards.slice(lastWatchedIdx + 1).find(c => !watched.has(c.dataset.id));
+
+  if(!target){
+    const original = nextFab.textContent;
+    nextFab.textContent = "🎉";
+    setTimeout(() => { nextFab.textContent = original; }, 1500);
+    return;
+  }
+
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  target.classList.add("next-highlight");
+  setTimeout(() => target.classList.remove("next-highlight"), 1800);
+});
 
 /* ---------- SERVICE WORKER / INSTALL / OFFLINE ---------- */
 // Service workers only register on https:// or localhost — file:// is blocked
