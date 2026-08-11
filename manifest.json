@@ -1,0 +1,14 @@
+{
+  "name": "How to Watch Marvel",
+  "short_name": "Watch Marvel",
+  "description": "Comic-stamped watch order and ratings for the whole Marvel filmography.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#efe6d2",
+  "theme_color": "#c31f2b",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
