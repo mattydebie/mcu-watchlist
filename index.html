@@ -169,6 +169,51 @@
     background:var(--ink);
     color:var(--paper);
   }
+  .order-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    justify-content:center;
+    flex-wrap:wrap;
+    padding:0 16px 18px;
+  }
+  .order-toggle .otl{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    font-weight:700;
+    color:var(--grey);
+  }
+  .order-toggle button{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    font-weight:700;
+    padding:8px 14px;
+    border:2.5px solid var(--navy);
+    background:var(--paper);
+    color:var(--navy);
+    cursor:pointer;
+    border-radius:3px;
+  }
+  .order-toggle button.active{
+    background:var(--navy);
+    color:var(--paper);
+  }
+  .chrono-note{
+    text-align:center;
+    max-width:640px;
+    margin:0 auto 8px;
+    font-size:0.82rem;
+    color:var(--grey);
+  }
+  .type-chip{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.62rem;
+    font-weight:700;
+    padding:2px 6px;
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    margin-right:6px;
+  }
 
   /* ---------- SECTIONS ---------- */
   section.block{
@@ -378,6 +423,15 @@
   <button data-f="tv">TV Shows only</button>
 </div>
 
+<div class="order-toggle" id="order-toggle">
+  <span class="otl">MCU order:</span>
+  <button data-order="release" class="active">🎬 Release Order</button>
+  <button data-order="chrono">⏳ Chronological Order</button>
+</div>
+<p class="chrono-note" id="chrono-note" style="display:none;">
+  In-universe order for the core Sacred Timeline. 🌀 = branches off the main timeline (Loki, What If, multiverse stuff) — there's no single "correct" slot for these, so don't take the exact position as gospel.
+</p>
+
 <main id="app"></main>
 
 <footer>
@@ -572,6 +626,80 @@ const SECTIONS = [
 
 const app = document.getElementById("app");
 
+// In-universe order for MCU movies + Disney+ shows only (the two sections
+// with id "mcu-movies" / "mcu-tv"). 🌀 = branches off the Sacred Timeline —
+// no fixed date, don't read the position as precise.
+const MCU_CHRONO_ORDER = [
+  ["Captain America: The First Avenger","1942–45"],
+  ["Captain Marvel","1995"],
+  ["Iron Man","~2010"],
+  ["Iron Man 2","~2011"],
+  ["The Incredible Hulk","~2011"],
+  ["Thor","2011"],
+  ["The Avengers","2012"],
+  ["Thor: The Dark World","2013"],
+  ["Iron Man 3","2013"],
+  ["Captain America: The Winter Soldier","2014"],
+  ["Guardians of the Galaxy","2014"],
+  ["Guardians of the Galaxy Vol. 2","2014"],
+  ["Avengers: Age of Ultron","2015"],
+  ["Ant-Man","2015"],
+  ["Captain America: Civil War","2016"],
+  ["Black Widow","2016"],
+  ["Spider-Man: Homecoming","2016"],
+  ["Doctor Strange","2016–17"],
+  ["Black Panther","2016–17"],
+  ["Thor: Ragnarok","2017"],
+  ["Avengers: Infinity War","2018"],
+  ["Ant-Man and the Wasp","2018"],
+  ["Avengers: Endgame","2018 → 2023"],
+  ["Spider-Man: Far From Home","2023"],
+  ["Spider-Man: No Way Home","2023–24"],
+  ["WandaVision","2023"],
+  ["The Falcon and the Winter Soldier","2023"],
+  ["Loki (Season 1)","🌀 branches off 2012"],
+  ["What If...? (Season 1)","🌀 no fixed date"],
+  ["Hawkeye","2024"],
+  ["Eternals","Millennia ago → 2024"],
+  ["Moon Knight","2024"],
+  ["Ms. Marvel","2025"],
+  ["Shang-Chi and the Legend of the Ten Rings","2024–25"],
+  ["She-Hulk: Attorney at Law","2025"],
+  ["Secret Invasion","2025"],
+  ["Loki (Season 2)","🌀 branches off 2023"],
+  ["Guardians of the Galaxy Vol. 3","2025"],
+  ["I Am Groot (shorts)","2025"],
+  ["Ironheart","2025"],
+  ["Echo","2025"],
+  ["The Marvels","2025"],
+  ["Agatha All Along","2025–26"],
+  ["What If...? (Season 2)","🌀 no fixed date"],
+  ["What If...? (Season 3)","🌀 no fixed date"],
+  ["Daredevil: Born Again (Season 1)","2025"],
+  ["Deadpool & Wolverine","🌀 The Void, outside time"],
+  ["Thunderbolts*","2025"],
+  ["Captain America: Brave New World","2025"],
+  ["Doctor Strange in the Multiverse of Madness","🌀 multiverse incursion"],
+  ["Ant-Man and the Wasp: Quantumania","2025"],
+  ["Black Panther: Wakanda Forever","2025–26"],
+  ["Thor: Love and Thunder","2025–26"],
+  ["Wonder Man","2025–26"],
+  ["Daredevil: Born Again (Season 2)","2026"],
+  ["The Punisher: One Last Kill","2026"],
+  ["The Fantastic Four: First Steps","🪐 Earth-828, not the main timeline"],
+  ["Spider-Man: Brand New Day","~2028"],
+  ["Avengers: Doomsday","🌀 multiversal event, upcoming"]
+];
+
+function findMcuItem(title){
+  for (const sec of SECTIONS){
+    if(sec.id!=="mcu-movies" && sec.id!=="mcu-tv") continue;
+    const idx = sec.items.findIndex(it=>it[0]===title);
+    if(idx>-1) return {sec, idx, item: sec.items[idx]};
+  }
+  return null;
+}
+
 function renderStamp(code){
   const r = RATINGS[code];
   return `<span class="stamp ${r.cls}" style="position:static;">${r.label}</span>`;
@@ -623,6 +751,54 @@ function build(){
 
 build();
 
+function buildChronoSection(){
+  const section = document.createElement("section");
+  section.className = "block";
+  section.id = "mcu-chrono";
+  section.dataset.type = "mixed";
+  section.style.display = "none"; // hidden until the toggle is switched
+
+  const cardsHtml = MCU_CHRONO_ORDER.map(([title, era], idx)=>{
+    const found = findMcuItem(title);
+    if(!found){ return ""; } // safety net if a title ever drifts out of sync
+    const [ , year, rating, blurb] = found.item;
+    const color = colorFor(title);
+    const letter = title.replace(/[^A-Za-z0-9]/g,"")[0] || "?";
+    const id = `${found.sec.id}__${found.idx}`;
+    const chip = found.sec.type === "tv" ? "📺 TV" : "🎬 Movie";
+    return `
+      <div class="card" data-type="${found.sec.type}" data-id="${id}" data-section="mcu-chrono">
+        <div class="thumb" style="background:${color};">
+          <span class="order-num">#${idx+1}</span>
+          <span class="mono-letter">${letter}</span>
+        </div>
+        <div class="body">
+          <div class="year mono"><span class="type-chip">${chip}</span>${era} <span style="opacity:.6">(released ${year})</span></div>
+          <h3>${title}</h3>
+          <p>${blurb}</p>
+          <div>${renderStamp(rating)}</div>
+          <label class="watched-toggle">
+            <input type="checkbox" class="watched-checkbox" data-id="${id}">
+            MARK WATCHED
+          </label>
+        </div>
+      </div>`;
+  }).join("");
+
+  section.innerHTML = `
+    <div class="block-head">
+      <h2>MCU — Chronological Order</h2>
+      <span class="tag">SACRED TIMELINE, IN STORY ORDER</span>
+      <span class="progress" data-progress-for="mcu-chrono"></span>
+    </div>
+    <p class="block-note">Same movies and shows as above, reordered by when they happen in-universe rather than when they came out. Same "mark watched" checkboxes — ticking one here ticks it there too.</p>
+    <div class="grid">${cardsHtml}</div>
+  `;
+  // Insert right after the mcu-tv section so it sits with the other MCU content.
+  document.getElementById("mcu-tv").insertAdjacentElement("afterend", section);
+}
+buildChronoSection();
+
 /* ---------- WATCHED STATE (localStorage) ---------- */
 const STORAGE_KEY = "marvel-watch-guide:watched";
 function getWatched(){
@@ -642,6 +818,13 @@ function updateProgress(){
     const el = document.querySelector(`[data-progress-for="${sec.id}"]`);
     if(el) el.textContent = `${done} / ${total} watched`;
   });
+  const chronoTotal = MCU_CHRONO_ORDER.length;
+  const chronoDone = MCU_CHRONO_ORDER.filter(([title])=>{
+    const found = findMcuItem(title);
+    return found && watched.has(`${found.sec.id}__${found.idx}`);
+  }).length;
+  const chronoEl = document.querySelector(`[data-progress-for="mcu-chrono"]`);
+  if(chronoEl) chronoEl.textContent = `${chronoDone} / ${chronoTotal} watched`;
 }
 
 function applyWatchedState(){
@@ -669,14 +852,44 @@ document.getElementById("filterbar").addEventListener("click", (e)=>{
   if(!btn) return;
   document.querySelectorAll("#filterbar button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-  const f = btn.dataset.f;
-  document.querySelectorAll(".card").forEach(card=>{
-    card.style.display = (f==="all" || card.dataset.type===f) ? "" : "none";
-  });
-  document.querySelectorAll("section.block").forEach(sec=>{
-    sec.style.display = (f==="all" || sec.dataset.type===f) ? "" : "none";
-  });
+  currentFilter = btn.dataset.f;
+  refreshVisibility();
 });
+
+document.getElementById("order-toggle").addEventListener("click", (e)=>{
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  document.querySelectorAll("#order-toggle button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  currentOrder = btn.dataset.order;
+  document.getElementById("chrono-note").style.display = currentOrder === "chrono" ? "" : "none";
+  refreshVisibility();
+});
+
+let currentFilter = "all";
+let currentOrder = "release";
+
+function refreshVisibility(){
+  // Cards: always filtered by movie/TV type, regardless of which section they're in.
+  document.querySelectorAll(".card").forEach(card=>{
+    card.style.display = (currentFilter==="all" || card.dataset.type===currentFilter) ? "" : "none";
+  });
+  // Sections: mixed-type sections (the chrono view) are never hidden by the
+  // type filter — their cards are already filtered individually above.
+  document.querySelectorAll("section.block").forEach(sec=>{
+    if(sec.id === "mcu-movies" || sec.id === "mcu-tv"){
+      sec.style.display = (currentOrder === "chrono") ? "none" :
+        (currentFilter==="all" || sec.dataset.type===currentFilter) ? "" : "none";
+      return;
+    }
+    if(sec.id === "mcu-chrono"){
+      sec.style.display = (currentOrder === "chrono") ? "" : "none";
+      return;
+    }
+    sec.style.display = (currentFilter==="all" || sec.dataset.type===currentFilter) ? "" : "none";
+  });
+}
+refreshVisibility();
 
 /* ---------- SERVICE WORKER / INSTALL / OFFLINE ---------- */
 // Service workers only register on https:// or localhost — file:// is blocked
