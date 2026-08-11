@@ -854,6 +854,23 @@ function saveWatched(set){
 }
 let watched = getWatched();
 
+/* ---------- VIEW PREFERENCES (localStorage) ---------- */
+const PREFS_KEY = "marvel-watch-guide:prefs";
+function getPrefs(){
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function savePrefs(){
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      filter: currentFilter,
+      order: currentOrder,
+      ratings: [...currentRatings]
+    }));
+  } catch(e){ /* storage unavailable, e.g. private browsing — fail quietly */ }
+}
+const savedPrefs = getPrefs();
+
 function updateProgress(){
   SECTIONS.forEach(sec=>{
     const total = sec.items.length;
@@ -896,6 +913,7 @@ document.getElementById("filterbar").addEventListener("click", (e)=>{
   document.querySelectorAll("#filterbar button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   currentFilter = btn.dataset.f;
+  savePrefs();
   refreshVisibility();
 });
 
@@ -906,6 +924,7 @@ document.getElementById("order-toggle").addEventListener("click", (e)=>{
   btn.classList.add("active");
   currentOrder = btn.dataset.order;
   document.getElementById("chrono-note").style.display = currentOrder === "chrono" ? "" : "none";
+  savePrefs();
   refreshVisibility();
 });
 
@@ -929,12 +948,29 @@ document.getElementById("ratingfilter").addEventListener("click", (e)=>{
   document.querySelectorAll("#ratingfilter button[data-r]:not(.rf-all)").forEach(b=>{
     b.classList.toggle("off", !currentRatings.has(b.dataset.r));
   });
+  savePrefs();
   refreshVisibility();
 });
 
-let currentFilter = "all";
-let currentOrder = "release";
-let currentRatings = new Set(Object.keys(RATINGS));
+const validRatings = Object.keys(RATINGS);
+let currentFilter = ["all","movie","tv"].includes(savedPrefs.filter) ? savedPrefs.filter : "all";
+let currentOrder = ["release","chrono"].includes(savedPrefs.order) ? savedPrefs.order : "release";
+let currentRatings = Array.isArray(savedPrefs.ratings) && savedPrefs.ratings.length
+  ? new Set(savedPrefs.ratings.filter(r => validRatings.includes(r)))
+  : new Set(validRatings);
+if(currentRatings.size === 0) currentRatings = new Set(validRatings);
+
+// Reflect restored prefs in the toolbar UI, which otherwise defaults to release/all/show-all.
+document.querySelectorAll("#filterbar button").forEach(b=>{
+  b.classList.toggle("active", b.dataset.f === currentFilter);
+});
+document.querySelectorAll("#order-toggle button").forEach(b=>{
+  b.classList.toggle("active", b.dataset.order === currentOrder);
+});
+document.getElementById("chrono-note").style.display = currentOrder === "chrono" ? "" : "none";
+document.querySelectorAll("#ratingfilter button[data-r]:not(.rf-all)").forEach(b=>{
+  b.classList.toggle("off", !currentRatings.has(b.dataset.r));
+});
 
 function refreshVisibility(){
   // Cards: filtered by movie/TV type AND by which rating tiers are active.

@@ -1,4 +1,4 @@
-const CACHE_NAME = "marvel-watch-guide-v2";
+const CACHE_NAME = "marvel-watch-guide-v3";
 const APP_SHELL = [
   "./index.html",
   "./manifest.json",
