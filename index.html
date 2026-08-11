@@ -205,6 +205,40 @@
     font-size:0.82rem;
     color:var(--grey);
   }
+  .ratingfilter{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    padding:0 16px 20px;
+  }
+  .ratingfilter button{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:800;
+    font-size:0.68rem;
+    letter-spacing:0.5px;
+    padding:6px 12px;
+    border:2.5px solid currentColor;
+    border-radius:3px;
+    text-transform:uppercase;
+    cursor:pointer;
+    background:rgba(255,255,255,0.35);
+    opacity:1;
+    transition:opacity .1s ease;
+  }
+  .ratingfilter button.off{
+    opacity:0.28;
+    background:transparent;
+  }
+  .ratingfilter button.MW{color:var(--red);}
+  .ratingfilter button.REC{color:var(--navy);}
+  .ratingfilter button.OPT{color:var(--mustard);}
+  .ratingfilter button.SKIP{color:var(--grey);}
+  .ratingfilter button.UPC{color:var(--purple);}
+  .ratingfilter .rf-all{
+    color:var(--ink) !important;
+    border-color:var(--ink) !important;
+  }
   .type-chip{
     font-family:'JetBrains Mono', monospace;
     font-size:0.62rem;
@@ -431,6 +465,15 @@
 <p class="chrono-note" id="chrono-note" style="display:none;">
   In-universe order for the core Sacred Timeline. 🌀 = branches off the main timeline (Loki, What If, multiverse stuff) — there's no single "correct" slot for these, so don't take the exact position as gospel.
 </p>
+
+<div class="ratingfilter" id="ratingfilter">
+  <button class="rf-all" data-r="__all">Show All</button>
+  <button class="MW" data-r="MW">🔥 Must Watch</button>
+  <button class="REC" data-r="REC">👍 Recommended</button>
+  <button class="OPT" data-r="OPT">🤷 Optional</button>
+  <button class="SKIP" data-r="SKIP">💀 Skip It</button>
+  <button class="UPC" data-r="UPC">🔮 Upcoming</button>
+</div>
 
 <main id="app"></main>
 
@@ -726,7 +769,7 @@ function build(){
           const letter = title.replace(/[^A-Za-z0-9]/g,"")[0] || "?";
           const id = `${sec.id}__${idx}`;
           return `
-            <div class="card" data-type="${sec.type}" data-id="${id}" data-section="${sec.id}">
+            <div class="card" data-type="${sec.type}" data-id="${id}" data-section="${sec.id}" data-rating="${rating}">
               <div class="thumb" style="background:${color};">
                 <span class="order-num">#${idx+1}</span>
                 <span class="mono-letter">${letter}</span>
@@ -767,7 +810,7 @@ function buildChronoSection(){
     const id = `${found.sec.id}__${found.idx}`;
     const chip = found.sec.type === "tv" ? "📺 TV" : "🎬 Movie";
     return `
-      <div class="card" data-type="${found.sec.type}" data-id="${id}" data-section="mcu-chrono">
+      <div class="card" data-type="${found.sec.type}" data-id="${id}" data-section="mcu-chrono" data-rating="${rating}">
         <div class="thumb" style="background:${color};">
           <span class="order-num">#${idx+1}</span>
           <span class="mono-letter">${letter}</span>
@@ -866,13 +909,39 @@ document.getElementById("order-toggle").addEventListener("click", (e)=>{
   refreshVisibility();
 });
 
+document.getElementById("ratingfilter").addEventListener("click", (e)=>{
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  const r = btn.dataset.r;
+  const allRatings = Object.keys(RATINGS);
+  if(r === "__all"){
+    currentRatings = new Set(allRatings);
+  } else if(currentRatings.size === allRatings.length){
+    // Everything's currently on — first click isolates this one tier
+    // instead of toggling it off into an empty selection.
+    currentRatings = new Set([r]);
+  } else if(currentRatings.has(r)){
+    currentRatings.delete(r);
+    if(currentRatings.size === 0) currentRatings = new Set(allRatings); // don't leave it empty
+  } else {
+    currentRatings.add(r);
+  }
+  document.querySelectorAll("#ratingfilter button[data-r]:not(.rf-all)").forEach(b=>{
+    b.classList.toggle("off", !currentRatings.has(b.dataset.r));
+  });
+  refreshVisibility();
+});
+
 let currentFilter = "all";
 let currentOrder = "release";
+let currentRatings = new Set(Object.keys(RATINGS));
 
 function refreshVisibility(){
-  // Cards: always filtered by movie/TV type, regardless of which section they're in.
+  // Cards: filtered by movie/TV type AND by which rating tiers are active.
   document.querySelectorAll(".card").forEach(card=>{
-    card.style.display = (currentFilter==="all" || card.dataset.type===currentFilter) ? "" : "none";
+    const typeOk = currentFilter==="all" || card.dataset.type===currentFilter;
+    const ratingOk = currentRatings.has(card.dataset.rating);
+    card.style.display = (typeOk && ratingOk) ? "" : "none";
   });
   // Sections: mixed-type sections (the chrono view) are never hidden by the
   // type filter — their cards are already filtered individually above.
