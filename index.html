@@ -205,6 +205,33 @@
     font-size:0.82rem;
     color:var(--grey);
   }
+  .chrono-nudge{
+    font-size:0.78rem;
+    color:var(--ink);
+    background:rgba(255,196,0,0.18);
+    border:1.5px dashed var(--mustard);
+    border-radius:4px;
+    padding:4px 8px;
+    margin:0 0 10px;
+  }
+  .chrono-nudge summary{
+    cursor:pointer;
+    font-weight:700;
+    list-style:none;
+    padding:2px 0;
+  }
+  .chrono-nudge summary::-webkit-details-marker{ display:none; }
+  .chrono-nudge summary::before{
+    content:"▸ ";
+    display:inline-block;
+    transition:transform .12s ease;
+  }
+  .chrono-nudge[open] summary::before{
+    content:"▾ ";
+  }
+  .chrono-nudge p{
+    margin:4px 0 6px;
+  }
   .ratingfilter{
     display:flex;
     flex-wrap:wrap;
@@ -718,7 +745,7 @@ const MCU_CHRONO_ORDER = [
   ["Thor: The Dark World","2013"],
   ["Iron Man 3","2013"],
   ["Captain America: The Winter Soldier","2014"],
-  ["Guardians of the Galaxy","2014"],
+  ["Guardians of the Galaxy","2014","Easter egg: Howard the Duck pops up in the post-credits scene. He got his own infamous 1986 movie — it's in the CLASSIC & CULT FILMS section below, best watched ironically."],
   ["Guardians of the Galaxy Vol. 2","2014"],
   ["Avengers: Age of Ultron","2015"],
   ["Ant-Man","2015"],
@@ -732,17 +759,17 @@ const MCU_CHRONO_ORDER = [
   ["Ant-Man and the Wasp","2018"],
   ["Avengers: Endgame","2018 → 2023"],
   ["Spider-Man: Far From Home","2023"],
-  ["Spider-Man: No Way Home","2023–24"],
+  ["Spider-Man: No Way Home","2023–24","Mid-credits: a sliver of Tom Hardy's Venom slips into the MCU before snapping back. That's Sony's own Venom films (SONY'S SPIDER-MAN UNIVERSE section) — not quite MCU canon."],
   ["WandaVision","2023"],
   ["The Falcon and the Winter Soldier","2023"],
   ["Loki (Season 1)","🌀 branches off 2012"],
   ["What If...? (Season 1)","🌀 no fixed date"],
-  ["Hawkeye","2024"],
+  ["Hawkeye","2024","Kingpin shows up — Vincent D'Onofrio reprising the role from the 2015–2018 Netflix Daredevil show (NETFLIX/ABC ERA section), not a recast."],
   ["Eternals","Millennia ago → 2024"],
   ["Moon Knight","2024"],
   ["Ms. Marvel","2025"],
   ["Shang-Chi and the Legend of the Ten Rings","2024–25"],
-  ["She-Hulk: Attorney at Law","2025"],
+  ["She-Hulk: Attorney at Law","2025","Matt Murdock shows up — that's Daredevil. His 2015–2018 Netflix show is optional and outside this timeline, but it's in the NETFLIX/ABC ERA section below if you want his backstory before Born Again."],
   ["Secret Invasion","2025"],
   ["Loki (Season 2)","🌀 branches off 2023"],
   ["Guardians of the Galaxy Vol. 3","2025"],
@@ -753,17 +780,17 @@ const MCU_CHRONO_ORDER = [
   ["Agatha All Along","2025–26"],
   ["What If...? (Season 2)","🌀 no fixed date"],
   ["What If...? (Season 3)","🌀 no fixed date"],
-  ["Daredevil: Born Again (Season 1)","2025"],
-  ["Deadpool & Wolverine","🌀 The Void, outside time"],
+  ["Daredevil: Born Again (Season 1)","2025","A direct continuation of the 2015–2018 Netflix Daredevil (and The Defenders / Punisher). None of it's required, but it's in the NETFLIX/ABC ERA section if you want the full history before jumping in here."],
+  ["Deadpool & Wolverine","🌀 The Void, outside time","Basically a victory lap for Fox's X-Men Universe — the more of the X-MEN UNIVERSE movies (and Blade, in CLASSIC & CULT FILMS) you've seen, the more of the cameos will land."],
   ["Thunderbolts*","2025"],
   ["Captain America: Brave New World","2025"],
-  ["Doctor Strange in the Multiverse of Madness","🌀 multiverse incursion"],
+  ["Doctor Strange in the Multiverse of Madness","🌀 multiverse incursion","The Illuminati scene includes Patrick Stewart as Professor X — reprising his role from Fox's X-Men movies (X-MEN UNIVERSE — MOVIES section), one last time."],
   ["Ant-Man and the Wasp: Quantumania","2025"],
   ["Black Panther: Wakanda Forever","2025–26"],
   ["Thor: Love and Thunder","2025–26"],
   ["Wonder Man","2025–26"],
   ["Daredevil: Born Again (Season 2)","2026"],
-  ["The Punisher: One Last Kill","2026"],
+  ["The Punisher: One Last Kill","2026","Jon Bernthal's Frank Castle, carried over from the 2017–2019 Netflix Punisher (NETFLIX/ABC ERA section) — optional, but it's the character's definitive origin."],
   ["The Fantastic Four: First Steps","🪐 Earth-828, not the main timeline"],
   ["Spider-Man: Brand New Day","~2028"],
   ["Avengers: Doomsday","🌀 multiversal event, upcoming"]
@@ -836,7 +863,7 @@ function buildChronoSection(){
   section.dataset.type = "mixed";
   section.style.display = "none"; // hidden until the toggle is switched
 
-  const cardsHtml = MCU_CHRONO_ORDER.map(([title, era], idx)=>{
+  const cardsHtml = MCU_CHRONO_ORDER.map(([title, era, nudge], idx)=>{
     const found = findMcuItem(title);
     if(!found){ return ""; } // safety net if a title ever drifts out of sync
     const [ , year, rating, blurb] = found.item;
@@ -844,6 +871,7 @@ function buildChronoSection(){
     const letter = title.replace(/[^A-Za-z0-9]/g,"")[0] || "?";
     const id = `${found.sec.id}__${found.idx}`;
     const chip = found.sec.type === "tv" ? "📺 TV" : "🎬 Movie";
+    const nudgeHtml = nudge ? `<details class="chrono-nudge"><summary>👀 Side-quest connection</summary><p>${nudge}</p></details>` : "";
     return `
       <div class="card" data-type="${found.sec.type}" data-id="${id}" data-section="mcu-chrono" data-rating="${rating}">
         <div class="thumb" style="background:${color};">
@@ -854,6 +882,7 @@ function buildChronoSection(){
           <div class="year mono"><span class="type-chip">${chip}</span>${era} <span style="opacity:.6">(released ${year})</span></div>
           <h3>${title}</h3>
           <p>${blurb}</p>
+          ${nudgeHtml}
           <div>${renderStamp(rating)}</div>
           <label class="watched-toggle">
             <input type="checkbox" class="watched-checkbox" data-id="${id}">
