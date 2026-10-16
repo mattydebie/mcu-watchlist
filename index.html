@@ -1156,6 +1156,10 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
           }
         });
       });
+      // register() only checks for a new sw.js if 24h+ have passed since the
+      // last check, so without this, returning visitors inside that window
+      // never see updatefound fire even when a newer version is live.
+      reg.update();
     }).catch(err => {
       console.warn("Service worker registration failed:", err);
     });
