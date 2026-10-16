@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="3" fill="#e4d8ba" opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="512" height="512" fill="#c31f2b"/>
+
+  <!-- halftone corner accents -->
+  <rect x="0" y="0" width="160" height="160" fill="url(#dots)"/>
+  <rect x="352" y="352" width="160" height="160" fill="url(#dots)"/>
+
+  <!-- stamped border frame -->
+  <rect x="26" y="26" width="460" height="460" rx="20" fill="none" stroke="#1c1712" stroke-width="30"/>
+
+  <!-- M drop shadow -->
+  <polyline points="176,372 176,168 256,262 336,168 336,372"
+    fill="none" stroke="#1c1712" stroke-width="34"
+    stroke-linecap="square" stroke-linejoin="miter" transform="translate(13,13)"/>
+
+  <!-- M -->
+  <polyline points="176,372 176,168 256,262 336,168 336,372"
+    fill="none" stroke="#efe6d2" stroke-width="34"
+    stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>
