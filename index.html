@@ -440,6 +440,48 @@
   .next-fab:hover{ transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); }
   .next-fab:active{ transform:translate(0,0); box-shadow:2px 2px 0 var(--ink); }
 
+  .update-toast{
+    position:fixed;
+    left:50%;
+    bottom:20px;
+    transform:translate(-50%,120%);
+    z-index:40;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    max-width:min(90vw,420px);
+    background:var(--paper);
+    border:3px solid var(--ink);
+    border-radius:8px;
+    padding:10px 14px;
+    box-shadow:4px 4px 0 var(--ink);
+    font-size:0.88rem;
+    color:var(--ink);
+    transition:transform 0.25s ease;
+  }
+  .update-toast.show{ transform:translate(-50%,0); }
+  .update-toast button{
+    flex:0 0 auto;
+    border:2px solid var(--ink);
+    border-radius:6px;
+    background:var(--mustard);
+    color:var(--ink);
+    font-weight:700;
+    font-size:0.82rem;
+    padding:4px 10px;
+    cursor:pointer;
+  }
+  .update-toast button:hover{ filter:brightness(1.05); }
+  .update-toast .dismiss{
+    background:transparent;
+    border:none;
+    font-size:1rem;
+    line-height:1;
+    padding:0 2px;
+    cursor:pointer;
+    color:var(--grey);
+  }
+
   @keyframes next-pulse{
     0%,100%{ box-shadow:0 0 0 0 rgba(201,138,31,0.65); }
     50%{ box-shadow:0 0 0 14px rgba(201,138,31,0); }
@@ -544,7 +586,17 @@
 
 <button id="next-fab" class="next-fab" title="Jump to what's next" aria-label="Scroll to the next unwatched item">⏭</button>
 
+<div id="update-toast" class="update-toast" role="status" aria-live="polite">
+  <span id="update-toast-text">✨ The list just got an update.</span>
+  <button id="update-toast-reload">Refresh</button>
+  <button id="update-toast-dismiss" class="dismiss" aria-label="Dismiss">✕</button>
+</div>
+
 <script>
+// Bump this alongside CACHE_NAME in sw.js whenever a new title is added,
+// so the update toast can say what's new instead of just "something changed."
+const LATEST_ADDITION = "VisionQuest";
+
 const RATINGS = {
   MW:   {label:"MUST WATCH",  cls:"MW"},
   REC:  {label:"RECOMMENDED", cls:"REC"},
@@ -632,7 +684,8 @@ const SECTIONS = [
     ["Marvel Zombies","2025","OPT","Separate continuity horror romp — fun, not essential."],
     ["Wonder Man","2026","OPT","Hollywood-satire superhero comedy, pleasant curiosity."],
     ["Daredevil: Born Again (Season 2)","2026","REC","Continues the momentum from Season 1."],
-    ["The Punisher: One Last Kill","2026","REC","Frank Castle's brutal return, tightly connected to Daredevil."]
+    ["The Punisher: One Last Kill","2026","REC","Frank Castle's brutal return, tightly connected to Daredevil."],
+    ["VisionQuest","2026","MW","The WandaVision/Agatha trilogy's finale, with Ultron back in the mix. Sticks the landing."]
   ]
 },
 {
@@ -778,6 +831,7 @@ const MCU_CHRONO_ORDER = [
   ["Echo","2025"],
   ["The Marvels","2025"],
   ["Agatha All Along","2025–26"],
+  ["VisionQuest","2026","Ultron's back — James Spader reprising the role from Avengers: Age of Ultron (2015), not a new villain out of nowhere."],
   ["What If...? (Season 2)","🌀 no fixed date"],
   ["What If...? (Season 3)","🌀 no fixed date"],
   ["Daredevil: Born Again (Season 1)","2025","A direct continuation of the 2015–2018 Netflix Daredevil (and The Defenders / Punisher). None of it's required, but it's in the NETFLIX/ABC ERA section if you want the full history before jumping in here."],
@@ -1090,13 +1144,35 @@ nextFab.addEventListener("click", () => {
 // by every browser for security reasons. Skip quietly if that's the case.
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(err => {
+    navigator.serviceWorker.register("./sw.js").then((reg) => {
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener("statechange", () => {
+          // A worker only reaches "installed" with an existing controller
+          // when it's replacing one already running an older version.
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdateToast();
+          }
+        });
+      });
+    }).catch(err => {
       console.warn("Service worker registration failed:", err);
     });
   });
 } else if (location.protocol === "file:") {
   console.warn("Running from file:// — service worker / install / offline mode won't work. Host this on https:// (e.g. GitHub Pages) for that to kick in.");
 }
+
+const updateToast = document.getElementById("update-toast");
+function showUpdateToast(){
+  document.getElementById("update-toast-text").textContent = LATEST_ADDITION
+    ? `✨ ${LATEST_ADDITION} just joined the list.`
+    : "Update available — refresh to get the latest.";
+  updateToast.classList.add("show");
+}
+document.getElementById("update-toast-reload").addEventListener("click", () => location.reload());
+document.getElementById("update-toast-dismiss").addEventListener("click", () => updateToast.classList.remove("show"));
 
 // "Add to home screen" prompt (Android/Chrome). iOS Safari has no programmatic
 // prompt — users add via Share → Add to Home Screen.
